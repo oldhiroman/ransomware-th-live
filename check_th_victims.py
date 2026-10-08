@@ -20,6 +20,8 @@ CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 # Default Config
 DEFAULT_CONFIG = {
     "apple_id_or_phone": "",
+    "line_channel_access_token": "",
+    "line_user_id": "",
     "ms_teams_webhook_url": "",
     "telegram_bot_token": "",
     "telegram_chat_id": "",
@@ -39,6 +41,10 @@ def load_config():
             logger.error(f"Error loading config.json: {e}")
     
     # Override from Environment Variables (for GitHub Actions / CI)
+    if os.getenv("LINE_CHANNEL_ACCESS_TOKEN"):
+        cfg["line_channel_access_token"] = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+    if os.getenv("LINE_USER_ID"):
+        cfg["line_user_id"] = os.getenv("LINE_USER_ID")
     if os.getenv("TELEGRAM_BOT_TOKEN"):
         cfg["telegram_bot_token"] = os.getenv("TELEGRAM_BOT_TOKEN")
     if os.getenv("TELEGRAM_CHAT_ID"):
@@ -239,7 +245,34 @@ def send_imessage(recipient, message):
     except Exception as e:
         logger.error(f"Error executing iMessage AppleScript: {e}")
 
-
+def send_line_message(access_token, user_id, message):
+    """Send alert to LINE Official Account user via Messaging API."""
+    if not access_token or not user_id:
+        return
+    url = "https://api.line.me/v2/bot/message/push"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    # Clean markdown formatting for clean LINE display
+    clean_message = message.replace("*", "")
+    payload = {
+        "to": user_id,
+        "messages": [
+            {
+                "type": "text",
+                "text": clean_message
+            }
+        ]
+    }
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=10)
+        if r.status_code == 200:
+            logger.info("LINE notification sent successfully")
+        else:
+            logger.warning(f"LINE notification failed: {r.status_code} - {r.text}")
+    except Exception as e:
+        logger.error(f"LINE notification error: {e}")
 
 def send_telegram(bot_token, chat_id, message):
     if not bot_token or not chat_id:
@@ -401,13 +434,15 @@ def notify_all(config, new_victims):
     if config.get("apple_id_or_phone"):
         send_imessage(config.get("apple_id_or_phone"), full_message)
 
-    # 3. Microsoft Teams Webhook
-    send_ms_teams(
-        config.get("ms_teams_webhook_url"),
-        new_victims
-    )
+    # 3. LINE Official Account (Messaging API)
+    if config.get("line_channel_access_token") and config.get("line_user_id"):
+        send_line_message(
+            config.get("line_channel_access_token"),
+            config.get("line_user_id"),
+            full_message
+        )
 
-    # 3. Telegram
+    # 4. Telegram
     send_telegram(
         config.get("telegram_bot_token"),
         config.get("telegram_chat_id"),
