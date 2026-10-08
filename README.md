@@ -1,84 +1,117 @@
-# Ransomware.live Thailand Daily Monitor
+# 🚨 Ransomware.live Thailand Daily Monitor
 
-สคริปต์ตรวจสอบข้อมูลเหยื่อ Ransomware ในประเทศไทย (Thailand) จาก [ransomware.live/map/th](https://www.ransomware.live/country/THA) และแจ้งเตือนอัตโนมัติเมื่อพบเหยื่อรายใหม่
+Automated threat intelligence monitoring for new ransomware victims in Thailand reported on [Ransomware.live](https://www.ransomware.live/country/THA).
 
----
-
-## 📁 ไฟล์ภายในโฟลเดอร์
-
-- `check_th_victims.py` : สคริปต์หลักที่ดึงข้อมูล ตรวจจับเหยื่อใหม่ และส่งแจ้งเตือน
-- `config.json` : ไฟล์กำหนดค่า Webhook / Token สำหรับการแจ้งเตือน
-- `seen_victims.json` : ฐานข้อมูลบันทึก ID เหยื่อที่เคยตรวจพบแล้ว (เพื่อไม่ให้แจ้งเตือนซ้ำ)
+Supports scheduled daily checks with automated notifications across **LINE**, **Telegram**, **iMessage**, **macOS Dialog**, **Discord**, and **Slack**.
 
 ---
 
-## ⚙️ การตั้งค่าการแจ้งเตือน (`config.json`)
+## ✨ Features
 
-เปิดไฟล์ `config.json` เพื่อใส่ Token หรือ Webhook ของช่องทางที่ต้องการ:
+- 🇹🇭 **Targeted Monitoring:** Scrapes and tracks ransomware leak site posts specifically affecting organizations in Thailand.
+- 🔄 **Multi-Environment Execution:**
+  - **GitHub Actions (Cloud):** Runs 24/7 in the cloud without requiring a running computer.
+  - **macOS Cron (Local):** Runs locally on Mac with native desktop alerts.
+- 📱 **Multi-Channel Alerting:**
+  - 💚 **LINE Official Account (Messaging API):** Push alerts directly to your LINE app.
+  - ✈️ **Telegram Bot:** Real-time markdown alerts via your Telegram Bot.
+  - 💬 **Apple iMessage:** Native iMessage alerts sent to your Apple ID on iPhone/Mac.
+  - 🖥️ **macOS Dialog Box:** Persistent on-screen popup alert with quick "Open Details" button.
+  - 🎮 **Discord / Slack:** Webhook integrations supported.
+- 🛡️ **Zero Duplicate Alerts:** State is maintained in `seen_victims.json` so only newly detected victims trigger alerts.
 
+---
+
+## 📁 Repository Structure
+
+```text
+├── .github/workflows/
+│   └── daily_check.yml       # GitHub Actions workflow (Scheduled at 09:05 AM Bangkok time)
+├── check_th_victims.py       # Main monitoring & notification Python script
+├── config.json               # Local credentials configuration file
+├── seen_victims.json         # Database of previously observed victims
+├── README.md                 # Project documentation
+└── .gitignore                # Git ignore patterns
+```
+
+---
+
+## ☁️ Running on GitHub Actions (Recommended)
+
+The workflow runs daily at **09:05 AM Bangkok Time (02:05 UTC)** via `.github/workflows/daily_check.yml`. When new victims are detected, the runner sends notifications and automatically commits the updated `seen_victims.json` back to the repository.
+
+### Required GitHub Secrets
+
+To enable alerts in the cloud, add the following secrets in **Settings > Secrets and variables > Actions**:
+
+| Secret Name | Description |
+| :--- | :--- |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Messaging API Channel Access Token |
+| `LINE_USER_ID` | Your LINE User ID (`U...`) |
+| `TELEGRAM_BOT_TOKEN` | Telegram Bot Token from `@BotFather` |
+| `TELEGRAM_CHAT_ID` | Your personal Telegram Chat ID |
+| `DISCORD_WEBHOOK_URL` | *(Optional)* Discord Webhook URL |
+| `SLACK_WEBHOOK_URL` | *(Optional)* Slack Incoming Webhook URL |
+
+---
+
+## 💻 Running Locally on macOS
+
+### 1. Requirements
+- Python 3.10+
+- Dependencies:
+  ```bash
+  pip install requests beautifulsoup4
+  ```
+
+### 2. Configure `config.json`
+Edit `config.json` with your credentials:
 ```json
 {
-    "telegram_bot_token": "YOUR_BOT_TOKEN",
-    "telegram_chat_id": "YOUR_CHAT_ID",
-    "discord_webhook_url": "YOUR_DISCORD_WEBHOOK_URL",
-    "slack_webhook_url": "YOUR_SLACK_WEBHOOK_URL",
-    "enable_macos_notification": true
+    "apple_id_or_phone": "your_apple_id@example.com",
+    "line_channel_access_token": "YOUR_LINE_ACCESS_TOKEN",
+    "line_user_id": "YOUR_LINE_USER_ID",
+    "telegram_bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+    "telegram_chat_id": "YOUR_TELEGRAM_CHAT_ID",
+    "enable_macos_notification": true,
+    "enable_macos_dialog": true
 }
 ```
 
-- **Telegram**: แจ้งเตือนผ่าน Bot (ใส่ `telegram_bot_token` และ `telegram_chat_id`)
-- **Discord**: แจ้งเตือนเข้า Channel ผ่าน Webhook (ใส่ `discord_webhook_url`)
-- **Slack**: แจ้งเตือนเข้า Channel ผ่าน Incoming Webhook (ใส่ `slack_webhook_url`)
-- **macOS Notification**: แจ้งเตือนเป็นป๊อปอัป Banner บนหน้าจอ Mac ทันที (เปิดใช้งานโดยตั้งเป็น `true`)
+### 3. Test Notifications
+Send a mock alert through all configured channels:
+```bash
+python3 check_th_victims.py --test
+```
+
+### 4. Schedule via macOS `crontab`
+To run every day at 09:00 AM:
+```bash
+(crontab -l 2>/dev/null; echo "0 9 * * * $(which python3) $(pwd)/check_th_victims.py >> $(pwd)/cron.log 2>&1") | crontab -
+```
+
+Check current crontab:
+```bash
+crontab -l
+```
 
 ---
 
-## ⏰ วิธีตั้งค่าให้รันอัตโนมัติทุกวันตอน 9:00 น.
+## 🔔 Alert Preview
 
-### วิธีที่ 1: ตั้งค่าผ่าน macOS `crontab` (แนะนำ ง่ายและเร็ว)
+When a new victim is detected, alerts look like this:
 
-1. เปิด Terminal แล้วพิมพ์คำสั่ง:
-   ```bash
-   crontab -e
-   ```
-2. ใส่บรรทัดต่อไปนี้ลงไป (รันทุกวันเวลา 09:00 น.):
-   ```cron
-   0 9 * * * /Library/Frameworks/Python.framework/Versions/3.11/bin/python3 /Users/pranodhm/Downloads/ransamware.live/check_th_victims.py >> /Users/pranodhm/Downloads/ransamware.live/cron.log 2>&1
-   ```
-3. กดบันทึก (หากใช้ vim กด `Esc` แล้วพิมพ์ `:wq` แล้วกด Enter)
+```text
+🚨 [Ransomware.live] New Victims Detected in Thailand (1 total)
+
+🎯 Victim: Target Company Thailand Co., Ltd.
+🏴‍☠️ Ransomware Group: LockBit 3.0
+📅 Discovered: 2026-10-08
+🏢 Industry/Sector: Technology
+🔗 Link: https://www.ransomware.live/map/th
+```
 
 ---
 
-### วิธีที่ 2: ตั้งค่าผ่าน macOS `launchd` (สำหรับให้ทำงานแม้เครื่อง sleep/wake)
-
-1. สร้างไฟล์ `~/Library/LaunchAgents/com.user.ransomware.th.plist` ด้วยเนื้อหา:
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-   <plist version="1.0">
-   <dict>
-       <key>Label</key>
-       <string>com.user.ransomware.th</string>
-       <key>ProgramArguments</key>
-       <array>
-           <string>/Library/Frameworks/Python.framework/Versions/3.11/bin/python3</string>
-           <string>/Users/pranodhm/Downloads/ransamware.live/check_th_victims.py</string>
-       </array>
-       <key>StartCalendarInterval</key>
-       <dict>
-           <key>Hour</key>
-           <integer>9</integer>
-           <key>Minute</key>
-           <integer>0</integer>
-       </dict>
-       <key>StandardOutPath</key>
-       <string>/Users/pranodhm/Downloads/ransamware.live/launchd.log</string>
-       <key>StandardErrorPath</key>
-       <string>/Users/pranodhm/Downloads/ransamware.live/launchd_err.log</string>
-   </dict>
-   </plist>
-   ```
-2. โหลด service:
-   ```bash
-   launchctl load ~/Library/LaunchAgents/com.user.ransomware.th.plist
-   ```
+## 📄 License
+MIT License. Open threat intelligence powered by [Ransomware.live](https://www.ransomware.live/).
