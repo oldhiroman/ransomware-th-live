@@ -1,0 +1,48 @@
+name: Ransomware Thailand Daily Monitor
+run-name: Check Thailand Victims (${{ github.event_name }})
+
+on:
+  schedule:
+    # 09:00 AM Bangkok Time (UTC+7) = 02:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+permissions:
+  contents: write # Needed to commit and push updated seen_victims.json
+
+jobs:
+  check-victims:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run victim monitor
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          python check_th_victims.py
+
+      - name: Commit and push updated seen victims list
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add seen_victims.json
+          if ! git diff --quiet --cached; then
+            git commit -m "chore: update seen victims list [skip ci]"
+            git push
+          else
+            echo "No changes in seen_victims.json to commit."
+          fi

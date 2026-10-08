@@ -1,0 +1,10 @@
+{
+    "apple_id_or_phone": "pranodhmong@hotmail.com",
+    "enable_macos_notification": true,
+    "enable_macos_dialog": true,
+    "ms_teams_webhook_url": "",
+    "telegram_bot_token": "8731843448:AAGkFOG2ka88nBXbjLADYBbWwwe_FQqcRUc",
+    "telegram_chat_id": "7697347457",
+    "discord_webhook_url": "",
+    "slack_webhook_url": ""
+}
