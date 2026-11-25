@@ -3,8 +3,9 @@ run-name: Check Thailand Victims (${{ github.event_name }})
 
 on:
   schedule:
-    # 07:58 AM Bangkok Time (UTC+7) = 00:58 AM UTC
-    - cron: '58 0 * * *'
+    # Run every 6 hours at 03:00, 09:00, 15:00, 21:00 Bangkok Time (UTC+7)
+    # Corresponding to 20:00, 02:00, 08:00, 14:00 UTC
+    - cron: '0 2,8,14,20 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 permissions:
